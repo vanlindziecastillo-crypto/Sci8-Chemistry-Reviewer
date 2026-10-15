@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Grade 8 Chemistry Reviewer</title>
   
-  <!-- PWA Web App Manifest (Encoded Data URI for Native Android WebAPK Installation & 100% Offline Support) -->
+  <!-- PWA Web App Manifest Link -->
   <link rel="manifest" href="manifest.json">
 
   <!-- Tailwind CSS -->
@@ -77,7 +77,7 @@
 
         <!-- Right Side Utility Badges -->
         <div class="flex items-center space-x-2">
-          <!-- Install App Button (Shows when browser fires install prompt) -->
+          <!-- Install App Button -->
           <button id="pwa-install-btn" onclick="installPWA()" class="hidden items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition-all">
             <i class="fa-solid fa-download mr-1.5"></i> Install App
           </button>
@@ -121,13 +121,14 @@
       <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-900/60 via-slate-900 to-slate-900 border border-slate-800 p-6 sm:p-10 shadow-2xl">
         <div class="relative z-10 max-w-2xl space-y-4">
           <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            Exact Curriculum Mirror • 100% Text Parity
+            Grade 8 Science Study Suite
           </span>
-          <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-            Grade 8 Science Chemistry Mastery Reviewer
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+            👋 Welcome, Science Explorer!
           </h2>
           <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Interactive, offline-ready study materials meticulously aligned with your lessons. Access comprehensive notes, tabular breakdowns, and practice items with zero research bias.
+            Ready to master Chemistry? 🧪 Test your knowledge, challenge yourself, and level up your Science skills. Learn at your own pace, one question at a time!<br><br>
+            Let’s explore, practice, and master Chemistry! 🚀
           </p>
           <div class="pt-2 flex flex-wrap gap-3">
             <button onclick="navigateTo('lessons')" class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-lg shadow-indigo-600/30 transition-all transform hover:-translate-y-0.5">
@@ -1402,7 +1403,7 @@
     }
 
     /* ==========================================================================
-       QUIZ & EXAM ENGINE (Randomization & Rendering)
+       QUIZ & EXAM ENGINE
        ========================================================================== */
     function renderQuizSelector() {
       const container = document.getElementById('quiz-list-grid');
@@ -1566,7 +1567,7 @@
     }
 
     /* ==========================================================================
-       GRADING & POST-QUIZ ITEM REVIEW SCREEN
+       GRADING & POST-QUIZ ITEM REVIEW
        ========================================================================== */
     function submitQuiz() {
       let score = 0;
@@ -1685,7 +1686,7 @@
     }
 
     /* ==========================================================================
-       DASHBOARD STATS & PROGRESS TRACKER
+       DASHBOARD STATS
        ========================================================================== */
     function renderDashboardStats() {
       const container = document.getElementById('stats-container');
@@ -1740,10 +1741,9 @@
     }
 
     /* ==========================================================================
-       PWA SERVICE WORKER & NATIVE INSTALL PROMPT LOGIC
+       PWA SERVICE WORKER & NATIVE INSTALL PROMPT
        ========================================================================== */
     function setupPWA() {
-      // Capture Chrome's native WebAPK install prompt
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
@@ -1754,10 +1754,9 @@
         }
       });
 
-      // Register Offline Service Worker via Inline Blob
       if ('serviceWorker' in navigator) {
         const swCode = `
-          const CACHE_NAME = 'chem8-v2';
+          const CACHE_NAME = 'chem8-v3';
           self.addEventListener('install', (e) => {
             self.skipWaiting();
           });
@@ -1784,7 +1783,6 @@
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then((choiceResult) => {
           if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the PWA install prompt');
             const installBtn = document.getElementById('pwa-install-btn');
             if (installBtn) installBtn.classList.add('hidden');
           }
