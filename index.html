@@ -3,10 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Grade 8 Chemistry Reviewer</title>
   
-  <!-- PWA Web App Manifest (Embedded Data URL for 100% Offline Support) -->
-  <link rel="manifest" id="manifest-placeholder">
+  <!-- PWA Web App Manifest (Encoded Data URI for Native Android WebAPK Installation & 100% Offline Support) -->
+  <link rel="manifest" href="data:application/manifest+json;utf8,%7B%22name%22%3A%22Grade%208%20Chemistry%20Reviewer%22%2C%22short_name%22%3A%22ChemReview8%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23020617%22%2C%22theme_color%22%3A%22%230f172a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'20'%20fill%3D'%234f46e5'%2F%3E%3Ctext%20x%3D'50%25'%20y%3D'50%25'%20dominant-baseline%3D'central'%20text-anchor%3D'middle'%20font-size%3D'50'%20fill%3D'white'%3E%F0%9F%A7%AA%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%20512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +17,6 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Custom Styling for Smooth Transitions, Print, & Scrollbars -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     body {
@@ -75,6 +77,11 @@
 
         <!-- Right Side Utility Badges -->
         <div class="flex items-center space-x-2">
+          <!-- Install App Button (Shows when browser fires install prompt) -->
+          <button id="pwa-install-btn" onclick="installPWA()" class="hidden items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition-all">
+            <i class="fa-solid fa-download mr-1.5"></i> Install App
+          </button>
+
           <!-- Offline Status Indicator -->
           <span id="offline-badge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Offline Ready
@@ -1320,11 +1327,12 @@
       lessonId: null,
       quizTitle: "",
       questions: [],
-      userAnswers: {}, // questionId -> chosenOptionIndex
+      userAnswers: {},
       currentIndex: 0
     };
 
     let userScores = JSON.parse(localStorage.getItem('chem8_user_scores') || '{}');
+    let deferredPrompt = null;
 
     /* ==========================================================================
        INITIALIZATION & NAVIGATION
@@ -1343,7 +1351,6 @@
       const target = document.getElementById(`view-${viewId}`);
       if (target) target.classList.remove('hidden');
 
-      // Highlight active navbar
       ['dashboard', 'lessons', 'quiz-select'].forEach(nav => {
         const btn = document.getElementById(`nav-${nav}`);
         if (btn) {
@@ -1401,7 +1408,6 @@
       const container = document.getElementById('quiz-list-grid');
       let html = '';
 
-      // Add individual lesson quizzes
       CURRICULUM.forEach((lesson, index) => {
         const scoreObj = userScores[lesson.id];
         const scoreBadge = scoreObj 
@@ -1425,7 +1431,6 @@
         `;
       });
 
-      // Add cumulative exam card
       const examScoreObj = userScores['cumulative_exam'];
       const examBadge = examScoreObj
         ? `<span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Best: ${examScoreObj.score}/${examScoreObj.total} (${Math.round(examScoreObj.score/examScoreObj.total*100)}%)</span>`
@@ -1452,12 +1457,9 @@
       container.innerHTML = html;
     }
 
-    // Deep clone & shuffle options array while keeping track of correct index
     function prepareQuestion(q) {
       const originalOptions = [...q.options];
       const correctOptionText = originalOptions[q.correctIdx];
-
-      // Shuffle options array for variation
       const shuffledOptions = [...originalOptions].sort(() => Math.random() - 0.5);
       const newCorrectIdx = shuffledOptions.indexOf(correctOptionText);
 
@@ -1485,7 +1487,6 @@
     }
 
     function startExam() {
-      // Gather all 35 questions from all 7 lessons
       let allQuestions = [];
       CURRICULUM.forEach(l => {
         l.questions.forEach(q => {
@@ -1520,15 +1521,11 @@
       const curr = currentQuizState.currentIndex;
 
       document.getElementById('quiz-current-idx').textContent = curr + 1;
-      
-      // Update progress bar percentage
       const pct = Math.round(((curr + 1) / total) * 100);
       document.getElementById('quiz-progress-bar').style.width = `${pct}%`;
 
-      // Render Question Text (preserving line breaks if present)
       document.getElementById('quiz-question-text').innerHTML = q.text.replace(/\n/g, '<br>');
 
-      // Render Option Cards
       const container = document.getElementById('quiz-options-container');
       const selectedOption = currentQuizState.userAnswers[q.id];
 
@@ -1544,7 +1541,6 @@
         `;
       }).join('');
 
-      // Controls State
       document.getElementById('btn-quiz-prev').disabled = curr === 0;
       
       if (curr === total - 1) {
@@ -1573,7 +1569,6 @@
        GRADING & POST-QUIZ ITEM REVIEW SCREEN
        ========================================================================== */
     function submitQuiz() {
-      // Calculate Score
       let score = 0;
       const total = currentQuizState.questions.length;
 
@@ -1584,7 +1579,6 @@
         }
       });
 
-      // Save score locally
       userScores[currentQuizState.lessonId] = {
         score,
         total,
@@ -1592,7 +1586,6 @@
       };
       localStorage.setItem('chem8_user_scores', JSON.stringify(userScores));
 
-      // Display Score Summary
       const pct = Math.round((score / total) * 100);
       document.getElementById('results-score-text').textContent = `${score} / ${total}`;
       document.getElementById('results-percentage').textContent = `${pct}% Mastery Score`;
@@ -1611,10 +1604,7 @@
         document.getElementById('results-icon').className = "fa-solid fa-book-open-reader text-indigo-400 text-4xl";
       }
 
-      // Render Item-by-Item Review Screen Cards
       renderItemReviewCards();
-
-      // Refresh Dashboard stats
       renderDashboardStats();
       renderQuizSelector();
 
@@ -1627,7 +1617,6 @@
       const html = currentQuizState.questions.map((q, idx) => {
         const userChoiceIdx = currentQuizState.userAnswers[q.id];
         const isCorrect = userChoiceIdx === q.newCorrectIdx;
-        const isUnanswered = userChoiceIdx === undefined;
 
         const borderClass = isCorrect 
           ? 'border-emerald-500/40 bg-slate-900' 
@@ -1637,17 +1626,14 @@
           ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"><i class="fa-solid fa-check mr-1"></i> Correct</span>`
           : `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30"><i class="fa-solid fa-xmark mr-1"></i> Incorrect</span>`;
 
-        // Render options with highlights
         const optionsHtml = q.shuffledOptions.map((optText, optIdx) => {
           let styleClass = "border-slate-800 bg-slate-950/60 text-slate-400";
           let labelBadge = "";
 
           if (optIdx === q.newCorrectIdx) {
-            // Correct Answer -> Highlighted in Green
             styleClass = "border-emerald-500 bg-emerald-950/40 text-emerald-200 font-semibold";
             labelBadge = `<span class="ml-auto text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">✓ Correct Answer</span>`;
           } else if (optIdx === userChoiceIdx && !isCorrect) {
-            // User Selected Incorrect Choice -> Highlighted in Red
             styleClass = "border-rose-500 bg-rose-950/40 text-rose-200 font-semibold";
             labelBadge = `<span class="ml-auto text-xs px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">X Your Choice</span>`;
           }
@@ -1675,7 +1661,6 @@
               ${optionsHtml}
             </div>
 
-            <!-- Explanation / Rationale Box -->
             <div class="p-4 rounded-xl bg-indigo-950/40 border border-indigo-800/50 space-y-1 mt-3">
               <div class="text-xs font-bold text-indigo-300 flex items-center">
                 <i class="fa-solid fa-circle-info mr-1.5"></i> Explanation & Key Rationale
@@ -1755,34 +1740,24 @@
     }
 
     /* ==========================================================================
-       PWA SERVICE WORKER & MANIFEST GENERATOR (100% Offline Support)
+       PWA SERVICE WORKER & NATIVE INSTALL PROMPT LOGIC
        ========================================================================== */
     function setupPWA() {
-      // 1. Generate Web Manifest Data URL dynamically
-      const manifestObj = {
-        name: "Grade 8 Chemistry Reviewer",
-        short_name: "ChemReview8",
-        start_url: "./",
-        display: "standalone",
-        background_color: "#020617",
-        theme_color: "#0f172a",
-        icons: [
-          {
-            src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234f46e5'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='50' fill='white'>🧪</text></svg>",
-            sizes: "192x192 512x512",
-            type: "image/svg+xml"
-          }
-        ]
-      };
-      
-      const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
-      const manifestUrl = URL.createObjectURL(manifestBlob);
-      document.getElementById('manifest-placeholder').setAttribute('href', manifestUrl);
+      // Capture Chrome's native WebAPK install prompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('pwa-install-btn');
+        if (installBtn) {
+          installBtn.classList.remove('hidden');
+          installBtn.classList.add('flex');
+        }
+      });
 
-      // 2. Register Offline Service Worker using Inline Blob URL
+      // Register Offline Service Worker via Inline Blob
       if ('serviceWorker' in navigator) {
         const swCode = `
-          const CACHE_NAME = 'chem8-v1';
+          const CACHE_NAME = 'chem8-v2';
           self.addEventListener('install', (e) => {
             self.skipWaiting();
           });
@@ -1799,8 +1774,22 @@
         const swUrl = URL.createObjectURL(swBlob);
 
         navigator.serviceWorker.register(swUrl)
-          .then(() => console.log('Offline PWA Service Worker Active'))
-          .catch(err => console.log('SW registration note:', err));
+          .then(() => console.log('PWA Service Worker Active'))
+          .catch(err => console.log('SW Note:', err));
+      }
+    }
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the PWA install prompt');
+            const installBtn = document.getElementById('pwa-install-btn');
+            if (installBtn) installBtn.classList.add('hidden');
+          }
+          deferredPrompt = null;
+        });
       }
     }
   </script>
